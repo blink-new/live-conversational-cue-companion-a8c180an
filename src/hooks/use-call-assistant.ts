@@ -21,6 +21,7 @@ export function useCallAssistant() {
     ],
     reminders: ['Mention the project deadline', 'Ask about family'],
     avoidTopics: ['Politics', 'Religion'],
+    conversationGoal: 'Have a friendly catch-up and discuss recent updates',
   })
 
   // Refs to maintain state in callbacks
@@ -29,6 +30,7 @@ export function useCallAssistant() {
   const aiAssistantRef = useRef<AIAssistant | null>(null)
   const messageTimeoutRef = useRef<number | null>(null)
   const reminderTimeoutsRef = useRef<{[key: string]: number}>({})
+  const recognitionRestartRef = useRef<number | null>(null)
 
   // Update refs when state changes
   useEffect(() => {
@@ -104,6 +106,26 @@ export function useCallAssistant() {
     }, interval)
   }, [generateAssistantMessage])
 
+  // Ensure speech recognition is running
+  const ensureSpeechRecognition = useCallback(() => {
+    if (callStateRef.current !== 'active') return
+    
+    // Check if speech recognition is still running and restart if needed
+    if (!speechRecognition.isListening() && speechRecognition.isSupported()) {
+      console.log('Restarting speech recognition')
+      speechRecognition.start(handleSpeechResult)
+    }
+    
+    // Schedule next check
+    if (recognitionRestartRef.current) {
+      clearTimeout(recognitionRestartRef.current)
+    }
+    
+    recognitionRestartRef.current = window.setTimeout(() => {
+      ensureSpeechRecognition()
+    }, 5000) // Check every 5 seconds
+  }, [handleSpeechResult])
+
   // Start the call
   const startCall = useCallback(() => {
     // Initialize AI assistant
@@ -140,7 +162,25 @@ export function useCallAssistant() {
     
     // Schedule periodic messages
     scheduleMessages()
-  }, [settings, handleSpeechResult, scheduleMessages])
+    
+    // Start the speech recognition monitoring
+    ensureSpeechRecognition()
+    
+    // Add a goal reminder if one is set
+    if (settings.conversationGoal) {
+      setTimeout(() => {
+        setConversation(prev => ({
+          ...prev,
+          messages: [...prev.messages, {
+            id: uuidv4(),
+            type: 'reminder',
+            content: `Goal: ${settings.conversationGoal}`,
+            timestamp: new Date(),
+          }],
+        }))
+      }, 2000)
+    }
+  }, [settings, handleSpeechResult, scheduleMessages, ensureSpeechRecognition])
 
   // End the call
   const endCall = useCallback(() => {
@@ -151,6 +191,11 @@ export function useCallAssistant() {
     if (messageTimeoutRef.current) {
       clearTimeout(messageTimeoutRef.current)
       messageTimeoutRef.current = null
+    }
+    
+    if (recognitionRestartRef.current) {
+      clearTimeout(recognitionRestartRef.current)
+      recognitionRestartRef.current = null
     }
     
     Object.values(reminderTimeoutsRef.current).forEach(timeoutId => {
@@ -191,7 +236,7 @@ export function useCallAssistant() {
     aiAssistantRef.current.setUserMessage(content)
     
     // Check for reminder requests
-    const reminderMatch = content.match(/remind me (?:to|about) (.+?) in (\d+) min/i)
+    const reminderMatch = content.match(/remind me (?:to|about) (.+?) in (\\d+) min/i)
     if (reminderMatch) {
       const reminderText = reminderMatch[1]
       const minutes = parseInt(reminderMatch[2])
@@ -232,6 +277,10 @@ export function useCallAssistant() {
       
       if (messageTimeoutRef.current) {
         clearTimeout(messageTimeoutRef.current)
+      }
+      
+      if (recognitionRestartRef.current) {
+        clearTimeout(recognitionRestartRef.current)
       }
       
       Object.values(reminderTimeoutsRef.current).forEach(timeoutId => {

@@ -11,13 +11,14 @@ import {
 import { Button } from "./ui/button"
 import { Label } from "./ui/label"
 import { Input } from "./ui/input"
+import { Textarea } from "./ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs"
 import { 
   RadioGroup, 
   RadioGroupItem 
 } from "./ui/radio-group"
 import { AssistantMode, CallSettings, Topic } from "@/types"
-import { X, Plus, Volume, Volume1, Volume2, Info } from "lucide-react"
+import { X, Plus, Volume, Volume1, Volume2, Info, Target } from "lucide-react"
 import { Badge } from "./ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip"
 
@@ -48,6 +49,13 @@ export function SettingsDialog({
     setLocalSettings({
       ...localSettings,
       mode: value as AssistantMode
+    })
+  }
+
+  const handleGoalChange = (value: string) => {
+    setLocalSettings({
+      ...localSettings,
+      conversationGoal: value
     })
   }
 
@@ -152,12 +160,43 @@ export function SettingsDialog({
           </DialogDescription>
         </DialogHeader>
         
-        <Tabs defaultValue="mode" className="mt-4">
-          <TabsList className="grid grid-cols-3 mb-4">
+        <Tabs defaultValue="goal" className="mt-4">
+          <TabsList className="grid grid-cols-4 mb-4">
+            <TabsTrigger value="goal">Goal</TabsTrigger>
             <TabsTrigger value="mode">Assistant Mode</TabsTrigger>
             <TabsTrigger value="topics">Topics</TabsTrigger>
             <TabsTrigger value="reminders">Reminders</TabsTrigger>
           </TabsList>
+          
+          <TabsContent value="goal" className="space-y-4">
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="conversation-goal" className="flex items-center gap-2">
+                  <Target className="h-4 w-4" />
+                  Conversation Goal
+                </Label>
+                <p className="text-sm text-muted-foreground mb-2">
+                  What's the main purpose of this conversation?
+                </p>
+                <Textarea
+                  id="conversation-goal"
+                  value={localSettings.conversationGoal || ""}
+                  onChange={(e) => handleGoalChange(e.target.value)}
+                  placeholder="e.g., Reconnect with my uncle, discuss school updates, and ask about his new car"
+                  className="min-h-[100px]"
+                />
+              </div>
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded-md p-3 text-blue-600 dark:text-blue-400">
+                <h4 className="font-medium flex items-center gap-2 mb-1">
+                  <Info className="h-4 w-4" />
+                  Why set a goal?
+                </h4>
+                <p className="text-sm">
+                  Setting a clear conversation goal helps your AI assistant provide more relevant suggestions and keep the conversation on track. Be specific about what you want to achieve.
+                </p>
+              </div>
+            </div>
+          </TabsContent>
           
           <TabsContent value="mode" className="space-y-4">
             <div className="space-y-4">

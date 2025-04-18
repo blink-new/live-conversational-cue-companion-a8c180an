@@ -33,4 +33,5 @@ export interface CallSettings {
   topics: Topic[];
   reminders: string[];
   avoidTopics: string[];
+  conversationGoal?: string;
 }

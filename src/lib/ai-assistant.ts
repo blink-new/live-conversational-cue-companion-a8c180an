@@ -126,6 +126,20 @@ export class AIAssistant {
       !discussedTopics.includes(topic.title.toLowerCase())
     );
     
+    // If we have a conversation goal, use it to guide suggestions
+    if (this.context.settings.conversationGoal && Math.random() > 0.7) {
+      const goal = this.context.settings.conversationGoal;
+      
+      const goalSuggestions = [
+        `Remember your goal: ${goal}`,
+        `To achieve your goal, try asking about their perspective on ${goal.split(' ').slice(0, 3).join(' ')}...`,
+        `Based on your goal, now would be a good time to steer the conversation toward ${goal.split(' ').slice(-3).join(' ')}`,
+        `Keep your goal in mind: ${goal}`,
+      ];
+      
+      return goalSuggestions[Math.floor(Math.random() * goalSuggestions.length)];
+    }
+    
     if (undiscussedTopics.length > 0) {
       // Suggest a topic that hasn't been discussed
       const topic = undiscussedTopics[Math.floor(Math.random() * undiscussedTopics.length)];
@@ -163,6 +177,11 @@ export class AIAssistant {
       }
     }
     
+    // Check if we're getting off track from our goal
+    if (this.context.settings.conversationGoal && Math.random() > 0.5) {
+      return `You're getting off track from your goal: ${this.context.settings.conversationGoal}. Try to refocus.`;
+    }
+    
     // General alerts
     const alerts = [
       "You're speaking too quickly. Slow down and take a breath.",
@@ -176,6 +195,11 @@ export class AIAssistant {
   }
 
   private generateReminder(): string {
+    // Remind about the conversation goal
+    if (this.context.settings.conversationGoal && Math.random() > 0.6) {
+      return `Goal reminder: ${this.context.settings.conversationGoal}`;
+    }
+    
     if (this.context.settings.reminders.length > 0) {
       const reminder = this.context.settings.reminders[
         Math.floor(Math.random() * this.context.settings.reminders.length)
@@ -214,7 +238,11 @@ export class AIAssistant {
       }
       return "I'll remind you about that soon.";
     } else if (message.includes("what do i say") || message.includes("what should i say") || message.includes("he's quiet") || message.includes("she's quiet") || message.includes("they're quiet")) {
-      // Suggest something to say based on current topics
+      // Suggest something to say based on current topics and goal
+      if (this.context.settings.conversationGoal) {
+        return `Based on your goal, ask: "I'd like to know more about your thoughts on ${this.context.settings.conversationGoal.split(' ').slice(-3).join(' ')}?"`;
+      }
+      
       const undiscussedTopics = this.context.settings.topics.filter(topic => 
         !this.context.currentTopics.includes(topic.title.toLowerCase())
       );
@@ -229,6 +257,25 @@ export class AIAssistant {
       return "Take a deep breath. Speak slowly and remember you're doing great. It's okay to pause.";
     } else if (message.includes("end the call") || message.includes("wrap up") || message.includes("finish")) {
       return "Say: 'I should let you go. It was great talking with you. Let's catch up again soon.'";
+    } else if (message.includes("goal") || message.includes("purpose") || message.includes("objective")) {
+      // Respond about the conversation goal
+      if (this.context.settings.conversationGoal) {
+        return `Your goal is: ${this.context.settings.conversationGoal}. Stay focused on this.`;
+      } else {
+        return "You haven't set a specific goal for this conversation. You can add one in the settings.";
+      }
+    } else if (message.includes("next topic") || message.includes("what topic")) {
+      // Suggest the next topic to discuss
+      const undiscussedTopics = this.context.settings.topics.filter(topic => 
+        !this.context.currentTopics.includes(topic.title.toLowerCase())
+      );
+      
+      if (undiscussedTopics.length > 0) {
+        const nextTopic = undiscussedTopics[0];
+        return `Next topic: ${nextTopic.title}. Try saying: "I'd like to talk about ${nextTopic.title} now."`;
+      } else {
+        return "You've covered all your planned topics. You could ask if they have anything they'd like to discuss.";
+      }
     } else {
       // Generic responses
       const responses = [

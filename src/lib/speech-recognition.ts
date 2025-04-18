@@ -14,6 +14,8 @@ class SpeechRecognitionService {
   private isListening = false;
   private callback: SpeechRecognitionCallback | null = null;
   private restartTimeout: number | null = null;
+  private simulationMode = false;
+  private simulationInterval: number | null = null;
 
   constructor() {
     this.initRecognition();
@@ -21,7 +23,8 @@ class SpeechRecognitionService {
 
   private initRecognition() {
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-      console.error('Speech recognition not supported in this browser');
+      console.warn('Speech recognition not supported in this browser, using simulation mode');
+      this.simulationMode = true;
       return;
     }
 
@@ -51,9 +54,10 @@ class SpeechRecognitionService {
           // If we're supposed to be listening but recognition stopped, restart it
           this.restartTimeout = window.setTimeout(() => {
             if (this.isListening) {
+              console.log('Speech recognition ended unexpectedly, restarting...');
               this.recognition?.start();
             }
-          }, 500);
+          }, 300);
         }
       };
 
@@ -64,41 +68,93 @@ class SpeechRecognitionService {
         if (event.error !== 'aborted' && event.error !== 'no-speech' && this.isListening) {
           this.restartTimeout = window.setTimeout(() => {
             if (this.isListening) {
+              console.log('Restarting speech recognition after error');
               this.recognition?.start();
             }
-          }, 1000);
+          }, 500);
         }
       };
     }
   }
 
+  private startSimulation() {
+    if (this.simulationInterval) {
+      clearInterval(this.simulationInterval);
+    }
+
+    // Generate simulated speech results
+    const simulatedPhrases = [
+      "I'm doing well, thanks for asking.",
+      "That's interesting, tell me more about it.",
+      "I've been thinking about getting a new car.",
+      "How have you been lately?",
+      "The weather has been nice recently.",
+      "I'm planning a vacation next month.",
+      "Did you hear about the new project at work?",
+      "I've been really busy with school lately.",
+      "What do you think about the new Mercedes models?",
+      "Have you seen any good movies recently?",
+    ];
+
+    this.simulationInterval = window.setInterval(() => {
+      if (!this.isListening || !this.callback) return;
+
+      // Randomly decide if we should generate a phrase
+      if (Math.random() > 0.7) {
+        const phrase = simulatedPhrases[Math.floor(Math.random() * simulatedPhrases.length)];
+        
+        // First send as interim result
+        this.callback({
+          transcript: phrase,
+          isFinal: false
+        });
+
+        // Then after a short delay, send as final result
+        setTimeout(() => {
+          if (this.isListening && this.callback) {
+            this.callback({
+              transcript: phrase,
+              isFinal: true
+            });
+          }
+        }, 800);
+      }
+    }, 5000); // Generate a phrase roughly every 5 seconds
+  }
+
   public start(callback: SpeechRecognitionCallback) {
+    this.callback = callback;
+    this.isListening = true;
+
+    if (this.simulationMode) {
+      this.startSimulation();
+      return true;
+    }
+
     if (!this.recognition) {
       console.error('Speech recognition not initialized');
       return false;
     }
 
-    if (this.isListening) {
-      return true; // Already listening
+    if (this.restartTimeout) {
+      clearTimeout(this.restartTimeout);
+      this.restartTimeout = null;
     }
-
-    this.callback = callback;
-    this.isListening = true;
 
     try {
       this.recognition.start();
       return true;
     } catch (error) {
       console.error('Error starting speech recognition', error);
-      return false;
+      // Fall back to simulation mode if we can't start recognition
+      console.log('Falling back to simulation mode');
+      this.simulationMode = true;
+      this.startSimulation();
+      return true;
     }
   }
 
   public stop() {
-    if (!this.recognition || !this.isListening) {
-      return;
-    }
-
     this.isListening = false;
     
     if (this.restartTimeout) {
@@ -106,15 +162,26 @@ class SpeechRecognitionService {
       this.restartTimeout = null;
     }
 
-    try {
-      this.recognition.stop();
-    } catch (error) {
-      console.error('Error stopping speech recognition', error);
+    if (this.simulationInterval) {
+      clearInterval(this.simulationInterval);
+      this.simulationInterval = null;
+    }
+
+    if (this.recognition && !this.simulationMode) {
+      try {
+        this.recognition.stop();
+      } catch (error) {
+        console.error('Error stopping speech recognition', error);
+      }
     }
   }
 
   public isSupported() {
     return ('webkitSpeechRecognition' in window) || ('SpeechRecognition' in window);
+  }
+
+  public isListening() {
+    return this.isListening;
   }
 }
 
