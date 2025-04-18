@@ -17,8 +17,9 @@ import {
   RadioGroupItem 
 } from "./ui/radio-group"
 import { AssistantMode, CallSettings, Topic } from "@/types"
-import { X, Plus, Volume, Volume1, Volume2 } from "lucide-react"
+import { X, Plus, Volume, Volume1, Volume2, Info } from "lucide-react"
 import { Badge } from "./ui/badge"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip"
 
 interface SettingsDialogProps {
   open: boolean
@@ -130,9 +131,24 @@ export function SettingsDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Call Settings</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            Call Settings
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-5 w-5 rounded-full">
+                    <Info className="h-3 w-3" />
+                    <span className="sr-only">Info</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-sm">
+                  <p>Configure how your AI assistant behaves during calls. Set topics to discuss, reminders, and choose how proactive the assistant should be.</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </DialogTitle>
           <DialogDescription>
-            Configure how your AI assistant behaves during calls
+            Customize your AI conversation assistant
           </DialogDescription>
         </DialogHeader>
         
@@ -185,8 +201,19 @@ export function SettingsDialog({
                   onChange={(e) => setNewTopic(e.target.value)}
                   placeholder="Add a topic..."
                   className="flex-1"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && newTopic.trim()) {
+                      e.preventDefault()
+                      addTopic()
+                    }
+                  }}
                 />
-                <Button type="button" onClick={addTopic} size="sm">
+                <Button 
+                  type="button" 
+                  onClick={addTopic} 
+                  size="sm"
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                >
                   <Plus className="h-4 w-4 mr-2" />
                   Add
                 </Button>
@@ -194,7 +221,7 @@ export function SettingsDialog({
               
               <div className="flex flex-wrap gap-2">
                 {localSettings.topics.map((topic) => (
-                  <Badge key={topic.id} variant="secondary" className="flex items-center gap-1">
+                  <Badge key={topic.id} variant="secondary" className="flex items-center gap-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20">
                     {topic.title}
                     <Button
                       variant="ghost"
@@ -225,8 +252,19 @@ export function SettingsDialog({
                   onChange={(e) => setNewAvoidTopic(e.target.value)}
                   placeholder="Add a topic to avoid..."
                   className="flex-1"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && newAvoidTopic.trim()) {
+                      e.preventDefault()
+                      addAvoidTopic()
+                    }
+                  }}
                 />
-                <Button type="button" onClick={addAvoidTopic} size="sm">
+                <Button 
+                  type="button" 
+                  onClick={addAvoidTopic} 
+                  size="sm"
+                  variant="outline"
+                >
                   <Plus className="h-4 w-4 mr-2" />
                   Add
                 </Button>
@@ -267,8 +305,19 @@ export function SettingsDialog({
                   onChange={(e) => setNewReminder(e.target.value)}
                   placeholder="Add a reminder..."
                   className="flex-1"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && newReminder.trim()) {
+                      e.preventDefault()
+                      addReminder()
+                    }
+                  }}
                 />
-                <Button type="button" onClick={addReminder} size="sm">
+                <Button 
+                  type="button" 
+                  onClick={addReminder} 
+                  size="sm"
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                >
                   <Plus className="h-4 w-4 mr-2" />
                   Add
                 </Button>
@@ -276,7 +325,7 @@ export function SettingsDialog({
               
               <div className="space-y-2">
                 {localSettings.reminders.map((reminder, index) => (
-                  <div key={index} className="flex items-center justify-between p-2 rounded-md bg-muted">
+                  <div key={index} className="flex items-center justify-between p-2 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400">
                     <span>{reminder}</span>
                     <Button
                       variant="ghost"
@@ -300,7 +349,12 @@ export function SettingsDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleSave}>Save Changes</Button>
+          <Button 
+            onClick={handleSave}
+            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+          >
+            Save Changes
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

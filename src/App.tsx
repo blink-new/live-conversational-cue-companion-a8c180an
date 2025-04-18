@@ -1,5 +1,5 @@
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Header } from './components/header'
 import { CallInterface } from './components/call-interface'
 import { SettingsDialog } from './components/settings-dialog'
@@ -8,6 +8,7 @@ import { useCallAssistant } from './hooks/use-call-assistant'
 import { ThemeProvider } from './components/ui/theme-provider'
 import { Toaster } from './components/ui/toaster'
 import { useToast } from './hooks/use-toast'
+import { TooltipProvider } from './components/ui/tooltip'
 
 function App() {
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -21,6 +22,7 @@ function App() {
     endCall,
     sendMessage,
     updateSettings,
+    isSpeechRecognitionSupported
   } = useCallAssistant()
   
   const handleStartCall = () => {
@@ -51,45 +53,64 @@ function App() {
     })
   }
 
+  // Show a welcome message on first load
+  useEffect(() => {
+    const hasSeenWelcome = localStorage.getItem('callbrain-welcome-seen')
+    
+    if (!hasSeenWelcome) {
+      setTimeout(() => {
+        toast({
+          title: "Welcome to CallBrain",
+          description: "Your AI-powered conversation assistant. Start a call to begin!",
+        })
+        localStorage.setItem('callbrain-welcome-seen', 'true')
+      }, 1000)
+    }
+  }, [toast])
+
   return (
     <ThemeProvider defaultTheme="dark">
-      <div className="min-h-screen flex flex-col bg-gradient-to-b from-background to-background/95">
-        <Header 
-          callState={callState}
-          onStartCall={handleStartCall}
-          onEndCall={handleEndCall}
-          onOpenSettings={() => setSettingsOpen(true)}
-        />
-        
-        <main className="flex-1 container py-6">
-          <div className="flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <h1 className="text-2xl font-bold">
-                {callState === 'active' ? 'Active Call' : 'Call Assistant'}
-              </h1>
-              <ModeIndicator 
-                mode={settings.mode} 
-                isActive={callState === 'active'} 
+      <TooltipProvider>
+        <div className="min-h-screen flex flex-col bg-gradient-to-b from-background to-background/95">
+          <Header 
+            callState={callState}
+            mode={settings.mode}
+            onStartCall={handleStartCall}
+            onEndCall={handleEndCall}
+            onOpenSettings={() => setSettingsOpen(true)}
+          />
+          
+          <main className="flex-1 container py-6">
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <h1 className="text-2xl font-bold">
+                  {callState === 'active' ? 'Active Call' : 'Call Assistant'}
+                </h1>
+                <ModeIndicator 
+                  mode={settings.mode} 
+                  isActive={callState === 'active'} 
+                />
+              </div>
+              
+              <CallInterface 
+                isActive={callState === 'active'}
+                messages={conversation.messages}
+                onSendMessage={handleSendMessage}
+                transcript={conversation.transcript}
+                isSpeechSupported={isSpeechRecognitionSupported}
               />
             </div>
-            
-            <CallInterface 
-              isActive={callState === 'active'}
-              messages={conversation.messages}
-              onSendMessage={handleSendMessage}
-              transcript={conversation.transcript}
-            />
-          </div>
-        </main>
-        
-        <SettingsDialog 
-          open={settingsOpen}
-          onOpenChange={setSettingsOpen}
-          settings={settings}
-          onSaveSettings={handleSaveSettings}
-        />
-      </div>
-      <Toaster />
+          </main>
+          
+          <SettingsDialog 
+            open={settingsOpen}
+            onOpenChange={setSettingsOpen}
+            settings={settings}
+            onSaveSettings={handleSaveSettings}
+          />
+        </div>
+        <Toaster />
+      </TooltipProvider>
     </ThemeProvider>
   )
 }

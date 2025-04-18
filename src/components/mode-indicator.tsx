@@ -2,6 +2,7 @@
 import { Volume, Volume1, Volume2 } from "lucide-react"
 import { AssistantMode } from "@/types"
 import { cn } from "@/lib/utils"
+import { motion } from "framer-motion"
 
 interface ModeIndicatorProps {
   mode: AssistantMode
@@ -34,12 +35,17 @@ export function ModeIndicator({ mode, isActive }: ModeIndicatorProps) {
   }
   
   return (
-    <div className={cn(
-      "flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm font-medium",
-      getModeColor()
-    )}>
+    <motion.div 
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.3 }}
+      className={cn(
+        "flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm font-medium",
+        getModeColor()
+      )}
+    >
       {getModeIcon()}
       <span className="capitalize">{mode} Mode</span>
-    </div>
+    </motion.div>
   )
 }
